@@ -4,12 +4,12 @@
 catalog:
     name: dabl-integration-core
     group_id: com.digitalasset
-    version: 0.9.81 # NOTE EXPERIMENTAL TAG UNTIL python-direct-hub-if SUPPORT IN HUB
+    version: 0.9.82
     short_description: The Core Pack
     description: Timer and Loopback Integrations
     author: Digital Asset (Switzerland) GmbH
     license: Apache-2.0
-    tags: [ integration, experimental ]
+    tags: [ integration ]
     icon_file: integration-icon.svg
     source_url: https://github.com/digital-asset/daml-dit-integration-core
 integration_types:

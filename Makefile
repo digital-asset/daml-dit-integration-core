@@ -13,7 +13,7 @@ all: ${DIT_NAME}
 publish: ${DIT_NAME}
 	ddit release
 
-${DIT_NAME}: dabl-meta.yaml Makefile ${PKG_FILES} ${SRC_FILES}
+${DIT_NAME}: dit-meta.yaml Makefile ${PKG_FILES} ${SRC_FILES}
 	ddit build --force --integration
 
 clean:
