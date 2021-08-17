@@ -37,6 +37,33 @@ getNextSequenceValue owner name =
         return 0
 
 
+template SequenceGenerator
+  with
+    owner : Party
+    prefix : Text
+    offset: Int
+  where
+    signatory owner
+
+    key (owner, prefix) : (Party, Text)
+    maintainer key._1
+
+    controller owner can
+        SequenceGenerator_BulkCreate : [ContractId Sequence]
+          with 
+            count: Int
+          do
+            assert (count >= 0)
+
+            create SequenceGenerator with
+              offset=offset+count
+              ..
+
+            forA [0..count-1] (\ii -> create Sequence with 
+               owner
+               name=prefix <> (show (ii + offset))
+               count=0)
+
 initial_create = scenario do
   alice <- getParty "alice"
 
@@ -63,3 +90,16 @@ two_sequences = scenario do
 
     assert (val == 0)
 
+bulk_create = scenario do
+  alice <- getParty "alice"
+
+  submit alice do
+    gen <- create SequenceGenerator with 
+              owner=alice
+              prefix="prefix"
+              offset=0
+
+    cids <- exercise gen SequenceGenerator_BulkCreate with
+      count=5
+
+    assert (length cids == 5)
