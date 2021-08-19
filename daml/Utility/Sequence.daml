@@ -3,6 +3,7 @@
 
 module Utility.Sequence where
 
+
 template Sequence
   with
     owner : Party
@@ -41,7 +42,9 @@ template SequenceGenerator
   with
     owner : Party
     prefix : Text
-    offset: Int
+    offset : Int
+    defaultBlockSize : Int
+    countLimit : Optional Int
   where
     signatory owner
 
@@ -49,20 +52,32 @@ template SequenceGenerator
     maintainer key._1
 
     controller owner can
-        SequenceGenerator_BulkCreate : [ContractId Sequence]
-          with 
-            count: Int
+        SequenceGenerator_CreateBlock : ([(ContractId Sequence)], (ContractId SequenceGenerator))
+          with
+            blockSizeRequest : Int
           do
-            assert (count >= 0)
+            assert (blockSizeRequest >= 0)
 
-            create SequenceGenerator with
-              offset=offset+count
-              ..
+            blockSize <- case countLimit of
+              Some limit -> return (min (limit - offset) blockSizeRequest)
+              None -> return blockSizeRequest
 
-            forA [0..count-1] (\ii -> create Sequence with 
+            seqCids <- forA [0..blockSize-1] (\ii -> create Sequence with
                owner
                name=prefix <> (show (ii + offset))
                count=0)
+
+            genCid <- create SequenceGenerator with
+              offset=offset+blockSize
+              ..
+
+            return (seqCids, genCid)
+
+        nonconsuming SequenceGenerator_CreateDefaultBlock : ([(ContractId Sequence)], (ContractId SequenceGenerator))
+          do
+            exercise self SequenceGenerator_CreateBlock with
+              blockSizeRequest=defaultBlockSize
+
 
 initial_create = scenario do
   alice <- getParty "alice"
@@ -93,13 +108,88 @@ two_sequences = scenario do
 bulk_create = scenario do
   alice <- getParty "alice"
 
-  submit alice do
-    gen <- create SequenceGenerator with 
+  gen <- submit alice do
+    create SequenceGenerator with
               owner=alice
               prefix="prefix"
               offset=0
+              defaultBlockSize=5
+              countLimit = None
 
-    cids <- exercise gen SequenceGenerator_BulkCreate with
-      count=5
+  submit alice do
+    (seqCids, _) <- exercise gen SequenceGenerator_CreateBlock
+      with
+        blockSizeRequest = 10
 
-    assert (length cids == 5)
+    assert (length seqCids == 10)
+
+bulk_default_create = scenario do
+  alice <- getParty "alice"
+
+  gen <- submit alice do
+    create SequenceGenerator with
+              owner=alice
+              prefix="prefix"
+              offset=0
+              defaultBlockSize=5
+              countLimit = None
+
+  submit alice do
+    (seqCids, _) <- exercise gen SequenceGenerator_CreateDefaultBlock
+
+    assert (length seqCids == 5)
+
+limited_partial_bulk_default_create = scenario do
+  alice <- getParty "alice"
+
+  gen <- submit alice do
+    create SequenceGenerator with
+              owner=alice
+              prefix="prefix"
+              offset=0
+              defaultBlockSize=5
+              countLimit = Some(2)
+
+  submit alice do
+    (seqCids, _) <- exercise gen SequenceGenerator_CreateDefaultBlock
+
+    assert (length seqCids == 2)
+
+limited_complete_bulk_default_create = scenario do
+  alice <- getParty "alice"
+
+  gen <- submit alice do
+    create SequenceGenerator with
+              owner=alice
+              prefix="prefix"
+              offset=0
+              defaultBlockSize=5
+              countLimit = Some(10)
+
+  submit alice do
+    (seqCids, _) <- exercise gen SequenceGenerator_CreateDefaultBlock
+
+    assert (length seqCids == 5)
+
+limited_complete_then_partial_bulk_default_create = scenario do
+  alice <- getParty "alice"
+
+  gen <- submit alice do
+    create SequenceGenerator with
+              owner=alice
+              prefix="prefix"
+              offset=0
+              defaultBlockSize=5
+              countLimit = Some(7)
+
+  gen2 <- submit alice do
+    (seqCids, genCid) <- exercise gen SequenceGenerator_CreateDefaultBlock
+
+    assert (length seqCids == 5)
+
+    return genCid
+
+  submit alice do
+    (seqCids, _) <- exercise gen2 SequenceGenerator_CreateDefaultBlock
+
+    assert (length seqCids == 2)

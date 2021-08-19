@@ -3,7 +3,7 @@
 
 sdk-version: 1.11.1
 name: dabl-integration-core
-version: 1.2.0
+version: 1.2.1
 source: daml/Modules.daml
 dependencies:
 - daml-prim

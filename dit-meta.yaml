@@ -4,7 +4,7 @@
 catalog:
     name: dabl-integration-core
     group_id: com.digitalasset
-    version: 0.9.82
+    version: 0.9.83
     short_description: The Core Pack
     description: Timer and Loopback Integrations
     author: Digital Asset (Switzerland) GmbH
