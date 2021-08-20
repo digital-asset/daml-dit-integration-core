@@ -70,6 +70,11 @@ integration_types:
             name: Wait Interval
             description: The wait interval in seconds.
             field_type: integer
+          - id: batchSize
+            name: Command Batch Size
+            description: Batch size used for command submissions to ledger
+            field_type: integer
+            default_value: "20"
     - id: ledger_event_log
       name: Ledger Event Log
       description: >
