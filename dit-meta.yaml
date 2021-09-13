@@ -4,7 +4,7 @@
 catalog:
     name: dabl-integration-core
     group_id: com.digitalasset
-    version: 0.9.83
+    version: 0.9.90
     short_description: The Core Pack
     description: Timer and Loopback Integrations
     author: Digital Asset (Switzerland) GmbH
@@ -70,6 +70,11 @@ integration_types:
             name: Wait Interval
             description: The wait interval in seconds.
             field_type: integer
+          - id: batchSize
+            name: Command Batch Size
+            description: Batch size used for command submissions to ledger
+            field_type: integer
+            default_value: "1"
     - id: ledger_event_log
       name: Ledger Event Log
       description: >

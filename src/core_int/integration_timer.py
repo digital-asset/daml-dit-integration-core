@@ -21,6 +21,11 @@ class IntegrationTimerEnv(IntegrationEnvironment):
     interval: int
     targetTemplate: str
     templateChoice: str
+    batchSize: int
+
+
+def batch_commands(commands, batch_size):
+    return list(commands[ii:ii+batch_size] for ii in range(0, len(commands), batch_size))
 
 
 def integration_timer_main(
@@ -42,6 +47,15 @@ def integration_timer_main(
     @events.time.periodic_interval(env.interval, label='Periodic Timer')
     async def interval_timer_elapsed():
         LOG.debug('Timer elapsed: %r', active_cids)
-        return [exercise(cid, env.templateChoice, {})
-                for cid
-                in active_cids]
+        commands = [exercise(cid, env.templateChoice, {})
+                    for cid
+                    in active_cids]
+
+        for batch in batch_commands(commands, env.batchSize):
+            await env.queue.put(batch)
+
+    @events.queue.message()
+    async def handle_command_batch(message):
+        LOG.debug('Submitting command batch, n=%r', len(message))
+        return message
+
